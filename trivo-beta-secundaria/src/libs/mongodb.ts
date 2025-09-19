@@ -1,4 +1,3 @@
-// /libs/mongodb.ts
 import mongoose from "mongoose";
 
 const MONGODB_URI = process.env.MONGODB_URI!;
@@ -19,12 +18,27 @@ declare global {
 const cached = global._mongo_cached || (global._mongo_cached = { conn: null, promise: null });
 
 export async function connectDB() {
-  if (cached.conn) return cached.conn;
+  if (cached.conn) {
+    console.log("✅ Usando conexión existente a MongoDB");
+    return cached.conn;
+  }
+  
   if (!cached.promise) {
+    console.log("🔄 Conectando a MongoDB...");
     cached.promise = mongoose
       .connect(MONGODB_URI, { bufferCommands: false })
-      .then((m) => m);
+      .then((m) => {
+        console.log("✅ Conectado correctamente a MongoDB");
+        console.log(`📡 Estado de conexión: ${mongoose.connection.readyState}`);
+        console.log(`🗄️ Base de datos: ${mongoose.connection.db?.databaseName}`);
+        return m;
+      })
+      .catch((error) => {
+        console.error("❌ Error al conectar a MongoDB:", error);
+        throw error;
+      });
   }
+  
   cached.conn = await cached.promise;
   return cached.conn;
 }
